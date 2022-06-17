@@ -1,6 +1,7 @@
 const express = require('express')
 const app = express()
-const port = process.env.PORT || 5000;
+//https://github.com/keystonejs/keystone-classic/issues/3994
+const port = process.env.PORT || 5000;//Heroku set the port dynamically not fixed!!
 const path = require('path');
 const ble =  require('./public/js/ble-module');
 const multer = require('multer');
@@ -27,7 +28,6 @@ const upload = multer({ storage:storage})
 app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`))
 
 app.post('/upload', upload.single('file'), function (req, res) {
-    //TODO: send data via BLE!!
     console.log('Received a POST request')
     console.log(req.file)
 })
