@@ -22,11 +22,14 @@ function bleScan(){
     //TODO: get service_uuid and characteristic_uuid from html form
     //TODO: show a status message of connection with alert or something
     //TODO: Store requested MTU size!!
+    let srvUUID = Number(document.getElementById('srvUUID').value)
+    let charUUID = Number(document.getElementById('charUUID').value)
+    console.log(srvUUID)
     navigator.bluetooth.requestDevice({
         filters: [{
             //name: 'NAME',
             //namePrefix:'PREFIX',
-            services: [serviceUUID],
+            services: [srvUUID],
         }]
     })
         .then(device => {
@@ -49,7 +52,7 @@ function bleScan(){
         .then(service => {
             keyService = service;
             console.log('Getting Notification Characteristic...');
-            return service.getCharacteristic(CharacteristicUUID_ReadRead);
+            return service.getCharacteristic(charUUID);
         })
         //Characteristic
         .then(characteristic => {
