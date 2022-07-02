@@ -8,6 +8,7 @@
             integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
             crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/gojs/release/go-debug.js"></script>
     <script src="js/ble-module.js"></script>
     <script type="text/javascript">
         function compileAS() {
@@ -115,6 +116,10 @@
 <div>
     <button onclick="bleScan()">Scan BLE-peripheral devices</button>
 </div>
+<div id="diagramDiv"
+     style="width:80%; height:500px; background-color: #DAE4E4;">
+</div>
+<div id="diagramEventMsg">selected node id will be shown here</div>
 <h2>You can code here (AssemblyScript)</h2>
 <div class="codeArea">
     <!-- <input type="file"> -->
@@ -161,6 +166,6 @@
     export declare function setConfJson(ptr: usize, len: usize): void;
   </textarea>
 </div>-->
-
+<script src="js/mesh-diagram.js"></script>
 </body>
 </html>
