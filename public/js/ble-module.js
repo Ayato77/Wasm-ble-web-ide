@@ -1,4 +1,5 @@
-const serviceUUID = 0x00FF;
+const serviceGraphUUID = 0x00EE;
+const charGraphUUID_Req_Table = 0xEE01;
 //Characteristics
 const CharacteristicUUID_Notification = '000000000-0000-0000-0000-000000000000';
 const CharacteristicUUID_ReadRead = 0xFF01;
@@ -12,7 +13,15 @@ let keyReadCharacteristic;
 let keyWriteCharacteristic;
 
 let esp32Characteristic;
+var meshGraphCharacteristic;
 let mtu = 20 //Default BLE MTU size is 20 Bytes
+
+
+
+
+/***************
+ * BLE
+ *****************/
 
 /**
  * web bluetooth api
@@ -27,10 +36,11 @@ function bleScan(){
     console.log(srvUUID)
     navigator.bluetooth.requestDevice({
         filters: [{
-            //name: 'NAME',
+            //name: 'ESP_GATTS_DEMO',
             //namePrefix:'PREFIX',
-            services: [srvUUID],
-        }]
+            services: [srvUUID]
+        }],
+        //optionalServices: [serviceGraphUUID]
     })
         .then(device => {
             //startModel('connecting...');
@@ -46,7 +56,7 @@ function bleScan(){
         .then(server => {
             keyServer = server;
             console.log('Getting service...');
-            return server.getPrimaryService(serviceUUID);
+            return server.getPrimaryService(srvUUID);
         })
         //get characteristic
         .then(service => {
@@ -59,6 +69,7 @@ function bleScan(){
             //Write here Read/Write/Notifications process for characteristic
             esp32Characteristic = characteristic;
             console.log('Got Characteristic');
+            console.log(esp32Characteristic.uuid)
             return esp32Characteristic.readValue();
         })
         .then(value => {
@@ -125,6 +136,101 @@ function onUpload(wasmArray){
     })
 }
 
+//TODO: GET function for routing tables.
+async function getMeshDataStreamInfo(){
+
+    console.log('Getting graph service...');
+
+    try {
+        console.log('Requesting Bluetooth Device...');
+        const device = await navigator.bluetooth.requestDevice({
+            filters: [{services: [serviceGraphUUID]}]});
+
+        console.log('Connecting to GATT Server...');
+        const server = await device.gatt.connect();
+
+        console.log('Getting Service...');
+        const service = await server.getPrimaryService(serviceGraphUUID);
+
+        console.log('Getting Characteristic...');
+        meshGraphCharacteristic = await service.getCharacteristic(charGraphUUID_Req_Table);
+        console.log('> Characteristic UUID:  ' + meshGraphCharacteristic.uuid);
+        console.log('> Broadcast:            ' + meshGraphCharacteristic.properties.broadcast);
+        console.log('> Read:                 ' + meshGraphCharacteristic.properties.read);
+        console.log('> Write w/o response:   ' +
+            meshGraphCharacteristic.properties.writeWithoutResponse);
+        console.log('> Write:                ' + meshGraphCharacteristic.properties.write);
+        console.log('> Notify:               ' + meshGraphCharacteristic.properties.notify);
+        console.log('> Indicate:             ' + meshGraphCharacteristic.properties.indicate);
+        console.log('> Signed Write:         ' +
+            meshGraphCharacteristic.properties.authenticatedSignedWrites);
+        console.log('> Queued Write:         ' + meshGraphCharacteristic.properties.reliableWrite);
+        console.log('> Writable Auxiliaries: ' +
+            meshGraphCharacteristic.properties.writableAuxiliaries);
+
+        const value = await meshGraphCharacteristic.readValue();
+
+        //TODO: add tuple array of links for data stream
+        console.log('Response incoming');
+        let mtu1 = value.getUint8(0);
+        let readTables = 0;
+        let i=1;
+        let numTarget = 0;
+        let nodeDataArray = []
+        let linkDataArray = []
+        let dataSource;
+        let dataTarget;
+        console.log('Number of node: ' + mtu1);
+        console.log('2nd element: ' + value.getUint8(1));
+
+        while(readTables<mtu1){
+            dataSource = 0
+            numTarget = value.getUint8(i)-1;
+            i++;
+            console.log('No of address' + numTarget);
+
+            //Read MAC address of table owner
+            for(let k=0;k<6;k++){
+                console.log('MAC: ' + value.getUint8(i));
+                dataSource = dataSource + value.getUint8(i)<<((5-k)*8)
+                i++;
+            }
+
+            nodeDataArray.push({key:dataSource, isGroup:true, text:dataSource.toString()})
+
+            for(let j=0;j<numTarget;j++){
+                dataTarget = 0;
+                for(let h=0; h<6; h++){
+                    console.log('MAC: ' + value.getUint8(i));
+                    dataTarget = dataTarget + value.getUint8(i)<<((5-h)*8)
+                    i++;
+                }
+                linkDataArray.push({from: dataSource, to:dataTarget})
+            }
+            readTables++;
+        }
+        console.log('End reading tables');
+        return {nodeDataArray, linkDataArray}
+
+
+    } catch(error) {
+        console.log('Update mesh graph failed. ' + error);
+        return;
+    }
+}
+
+
 function onDisconnected(){
     console.log('> Bluetooth Device disconnected')
 };
+
+function getNodes(){
+    let obj = [
+        { key: 1, text: "Alpha" },
+        { key: 2, text: "Beta" },
+        { key: 3, text: "Gamma", group: 5 },
+        { key: 4, text: "Delta", group: 5 },
+        { key: 5, text: "Epsilon", isGroup: true }
+    ];
+    return obj
+}

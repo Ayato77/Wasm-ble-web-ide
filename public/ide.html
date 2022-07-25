@@ -119,7 +119,16 @@
 <div id="diagramDiv"
      style="width:80%; height:500px; background-color: #DAE4E4;">
 </div>
+<div>
+    <button onclick="updateGraph()">Update mesh network graph</button>
+</div>
+<div>
+    <button onclick="addNode()">Add Node</button>
+</div>
 <div id="diagramEventMsg">selected node id will be shown here</div>
+<div id="notificationMsg">
+    Notification active??
+</div>
 <h2>You can code here (AssemblyScript)</h2>
 <div class="codeArea">
     <!-- <input type="file"> -->
@@ -166,6 +175,19 @@
     export declare function setConfJson(ptr: usize, len: usize): void;
   </textarea>
 </div>-->
+<textarea id="mySavedModel" style="width:100%;height:300px" hidden>{ "class": "go.GraphLinksModel",
+  "nodeDataArray": [
+{"key":1, "isGroup":true, "text":"Root"},
+{"key":2, "isGroup":true, "text":"Processor"},
+{"key":3, "isGroup":true, "text":"Reader"},
+{"text":"wasm A", "group":2, "key":-1},
+{"text":"wasm B", "group":3, "key":-2}
+ ],
+  "linkDataArray": [
+    { "from": 1, "to": 2 },
+    { "from": 1, "to": 3 }
+    ]}
+  </textarea>
 <script src="js/mesh-diagram.js"></script>
 </body>
 </html>
