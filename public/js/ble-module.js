@@ -183,6 +183,7 @@ async function getMeshDataStreamInfo(){
         let readTables = 0;
         let i=1;
         let numTarget = 0;
+        let hasWasmModule = 0;
         let nodeDataArray = []
         let linkDataArray = []
         let dataSource;
@@ -192,6 +193,8 @@ async function getMeshDataStreamInfo(){
 
         while(readTables<mtu1){
             dataSource = ""
+            hasWasmModule = value.getUint8(i);
+            i++;
             numTarget = value.getUint8(i)-1;
             i++;
             console.log('No of address' + numTarget);
@@ -207,6 +210,9 @@ async function getMeshDataStreamInfo(){
             console.log("data source:");
             console.log(dataSource);
             nodeDataArray.push({key:dataSource, isGroup:true, text:dataSource})
+            if(hasWasmModule){
+                nodeDataArray.push({key:dataSource+"WASM", text:"Wasm"+i.toString(), group:dataSource})
+            }
 
             for(let j=0;j<numTarget;j++){
                 dataTarget = "";
@@ -216,6 +222,7 @@ async function getMeshDataStreamInfo(){
                     i++;
                 }
                 dataTarget = dataTarget.slice(0,-1);
+                console.log('Target MAC: ' + dataTarget);
                 linkDataArray.push({from: dataSource, to:dataTarget})
             }
             readTables++;
