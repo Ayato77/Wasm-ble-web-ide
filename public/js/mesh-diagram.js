@@ -152,23 +152,32 @@ function init() {
                 toShortLength: 2
             },
             $(go.Shape,
-                { strokeWidth: 2 }),
+                { strokeWidth: 2 },
+                new go.Binding("stroke", "color")),
             $(go.Shape,
-                { toArrow: "Standard", stroke: null })
+                { toArrow: "Standard", stroke: null },
+                new go.Binding("fill", "color"))
         );
+
+    myDiagram.addDiagramListener("ObjectSingleClicked",
+        function(e) {
+            var part = e.subject.part;
+            if (!(part instanceof go.Link)) setSelectedNodeMAC(part.data.key);
+        });
 
 
     myDiagram.model.nodeDataArray = [
-        {key:1, isGroup:true, text:"Root"},
-        {key:2, isGroup:true, text:"Processor"},
-        {key:3, isGroup:true, text:"Reader"},
+        {key:"1", isGroup:true, text:"Root"},
+        {key:"2", isGroup:true, text:"Processor"},
+        {key:"3", isGroup:true, text:"Reader"},
         {text:"wasm A", group:2, key:-1},
         {text:"wasm B", group:3, key:-2}
     ];
 
     myDiagram.model.linkDataArray = [
-        { from: 1, to: 2 },
-        { from: 1, to: 3 }
+        { from: "1", to: "2" , color: 'red'},
+        { from: "1", to: "3" , color: 'red'},
+        { from: "3", to: "2" }
     ]
 }
 
@@ -179,6 +188,12 @@ async function updateGraph(){
     myDiagram.model.nodeDataArray = []
     myDiagram.model.nodeDataArray = nodeDataArray
     myDiagram.model.linkDataArray = linkDataArray
+}
+
+function setSelectedNodeMAC(macAddress){
+    wasmTargetNode = macAddress.split(':').map(Number);
+    console.log("MAC of current selected node: ");
+    console.log(wasmTargetNode);
 }
 
 

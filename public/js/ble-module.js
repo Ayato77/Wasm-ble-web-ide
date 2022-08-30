@@ -15,6 +15,7 @@ let keyWriteCharacteristic;
 let esp32Characteristic;
 var meshGraphCharacteristic;
 let mtu = 20 //Default BLE MTU size is 20 Bytes
+let wasmTargetNode = [0,0,0,0,0,0]
 
 
 
@@ -94,11 +95,17 @@ function onUpload(wasmArray){
     console.log(wasmArray.length)
     let numberOfPackets = Math.ceil(wasmArray.length/(mtu-3))
     //Assume that the max number of packets is 16^4
-    let bufferInit = new ArrayBuffer(3)//
+    let bufferInit = new ArrayBuffer(9)//
     let byteArray = new Uint8Array(bufferInit)
     byteArray[0] = 0x01;
     byteArray[1] = numberOfPackets>>8;
     byteArray[2] = numberOfPackets % 256;
+    byteArray[3] = wasmTargetNode[0];
+    byteArray[4] = wasmTargetNode[1];
+    byteArray[5] = wasmTargetNode[2];
+    byteArray[6] = wasmTargetNode[3];
+    byteArray[7] = wasmTargetNode[4];
+    byteArray[8] = wasmTargetNode[5];
 
     let bufferNext = new ArrayBuffer(mtu)
     let byteNextArray = new Uint8Array(bufferNext)
@@ -184,27 +191,31 @@ async function getMeshDataStreamInfo(){
         console.log('2nd element: ' + value.getUint8(1));
 
         while(readTables<mtu1){
-            dataSource = 0
+            dataSource = ""
             numTarget = value.getUint8(i)-1;
             i++;
             console.log('No of address' + numTarget);
 
-            //Read MAC address of table owner
+            //TODO:Read MAC address of table owner　!!DO NOT USE BIT SHIFT!! convert to string
             for(let k=0;k<6;k++){
                 console.log('MAC: ' + value.getUint8(i));
-                dataSource = dataSource + value.getUint8(i)<<((5-k)*8)
+                dataSource = dataSource + value.getUint8(i).toString() + ":" ;
                 i++;
             }
+            dataSource = dataSource.slice(0,-1);
 
-            nodeDataArray.push({key:dataSource, isGroup:true, text:dataSource.toString()})
+            console.log("data source:");
+            console.log(dataSource);
+            nodeDataArray.push({key:dataSource, isGroup:true, text:dataSource})
 
             for(let j=0;j<numTarget;j++){
-                dataTarget = 0;
+                dataTarget = "";
                 for(let h=0; h<6; h++){
                     console.log('MAC: ' + value.getUint8(i));
-                    dataTarget = dataTarget + value.getUint8(i)<<((5-h)*8)
+                    dataTarget = dataTarget + value.getUint8(i).toString() + ":";
                     i++;
                 }
+                dataTarget = dataTarget.slice(0,-1);
                 linkDataArray.push({from: dataSource, to:dataTarget})
             }
             readTables++;
