@@ -14,8 +14,11 @@ let keyWriteCharacteristic;
 
 let esp32Characteristic;
 var meshGraphCharacteristic;
+let meshMonitorDevice;
 let mtu = 20 //Default BLE MTU size is 20 Bytes
 let wasmTargetNode = [0,0,0,0,0,0]
+let sourceNode = [0,0,0,0,0,0]
+let sinkNode = [0,0,0,0,0,0]
 
 
 
@@ -144,17 +147,18 @@ function onUpload(wasmArray){
 }
 
 //TODO: GET function for routing tables.
-async function getMeshDataStreamInfo(){
+async function connectMeshMonitorNode(){
 
     console.log('Getting graph service...');
 
     try {
         console.log('Requesting Bluetooth Device...');
-        const device = await navigator.bluetooth.requestDevice({
-            filters: [{services: [serviceGraphUUID]}]});
+        meshMonitorDevice = await navigator.bluetooth.requestDevice({
+            filters: [{services: [serviceGraphUUID]}]
+        });
 
         console.log('Connecting to GATT Server...');
-        const server = await device.gatt.connect();
+        const server = await meshMonitorDevice.gatt.connect();
 
         console.log('Getting Service...');
         const service = await server.getPrimaryService(serviceGraphUUID);
@@ -174,7 +178,18 @@ async function getMeshDataStreamInfo(){
         console.log('> Queued Write:         ' + meshGraphCharacteristic.properties.reliableWrite);
         console.log('> Writable Auxiliaries: ' +
             meshGraphCharacteristic.properties.writableAuxiliaries);
+        }catch(error) {
+        console.log('Connecting to mesh monitor node failed. ' + error);
+        return;
+    }
+}
 
+async function getMeshDataStreamInfo(){
+    if(meshGraphCharacteristic == undefined){
+        alert("No device connected. Connect to a monitor node first");
+        return;
+    }
+    try{
         const value = await meshGraphCharacteristic.readValue();
 
         //TODO: add tuple array of links for data stream
@@ -190,6 +205,8 @@ async function getMeshDataStreamInfo(){
         let dataTarget;
         console.log('Number of node: ' + mtu1);
         console.log('2nd element: ' + value.getUint8(1));
+        myDiagram.model.nodeDataArray = [];
+        myDiagram.model.linkDataArray = [];
 
         while(readTables<mtu1){
             dataSource = ""
@@ -209,7 +226,9 @@ async function getMeshDataStreamInfo(){
 
             console.log("data source:");
             console.log(dataSource);
-            nodeDataArray.push({key:dataSource, isGroup:true, text:dataSource})
+            myDiagram.startTransaction("add node")
+            myDiagram.model.commit(m => {m.addNodeData({key:dataSource, isGroup:true, text:dataSource})},"add node")
+            myDiagram.commitTransaction("add node")
             if(hasWasmModule){
                 nodeDataArray.push({key:dataSource+"WASM", text:"Wasm"+i.toString(), group:dataSource})
             }
@@ -223,14 +242,14 @@ async function getMeshDataStreamInfo(){
                 }
                 dataTarget = dataTarget.slice(0,-1);
                 console.log('Target MAC: ' + dataTarget);
-                linkDataArray.push({from: dataSource, to:dataTarget})
+                myDiagram.startTransaction("add link");
+                myDiagram.model.commit(m => {m.addLinkData({from: dataSource, to:dataTarget})}, "add link");
+                myDiagram.commitTransaction("add link");
             }
             readTables++;
         }
+        isGraphReady = true;//make graph reactive
         console.log('End reading tables');
-        return {nodeDataArray, linkDataArray}
-
-
     } catch(error) {
         console.log('Update mesh graph failed. ' + error);
         return;

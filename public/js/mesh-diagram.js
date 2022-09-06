@@ -1,4 +1,6 @@
 const portSize = new go.Size(8, 8);
+let selectedLink;
+let isGraphReady = true;
 
 function init() {
     const $ = go.GraphObject.make;
@@ -9,7 +11,13 @@ function init() {
             mouseDrop: e => finishDrop(e, null),
             //layout:
             "commandHandler.archetypeGroupData": { isGroup: true, text: "Group", horiz: false },
-            "undoManager.isEnabled": true
+            "undoManager.isEnabled": true,
+            "ModelChanged": e => {
+                if (e.isTransactionFinished && isGraphReady) {
+                    // this records each Transaction as a JSON-format string
+                    updateIncremental(myDiagram.model.toIncrementalJson(e));
+                }
+            },
         });
 
     myDiagram.layout = new go.LayeredDigraphLayout();
@@ -162,38 +170,106 @@ function init() {
     myDiagram.addDiagramListener("ObjectSingleClicked",
         function(e) {
             var part = e.subject.part;
-            if (!(part instanceof go.Link)) setSelectedNodeMAC(part.data.key);
+            if (part instanceof go.Group){
+                setSelectedNodeMAC(part.data.key);
+            }
+            else if(part instanceof go.Link){
+                selectedLink = myDiagram.model.findLinkDataForKey(part.data.key)
+                console.log(JSON.stringify(selectedLink))
+            }
+
         });
 
-
-    myDiagram.model.nodeDataArray = [
-        {key:"1", isGroup:true, text:"Root"},
-        {key:"2", isGroup:true, text:"Processor"},
-        {key:"3", isGroup:true, text:"Reader"},
-        {text:"wasm A", group:2, key:-1},
-        {text:"wasm B", group:3, key:-2}
-    ];
-
-    myDiagram.model.linkDataArray = [
-        { from: "1", to: "2" , color: 'red'},
-        { from: "1", to: "3" , color: 'red'},
-        { from: "3", to: "2" }
-    ]
+    myDiagram.model = $(go.GraphLinksModel,
+        {
+            nodeKeyProperty: 'key',
+            linkKeyProperty: 'key',
+            nodeDataArray: [
+                {key:"1", isGroup:true, text:"Root"},
+                {key:"2", isGroup:true, text:"Processor"},
+                {key:"3", isGroup:true, text:"Reader"},
+                {text:"wasm A", group:2, key:-1},
+                {text:"wasm B", group:3, key:-2}
+            ],
+            linkDataArray: [
+                { key:"1", from: "1", to: "2" , color: 'red'},
+                { key:"2", from: "1", to: "3" , color: 'red'},
+                { key:"3", from: "3", to: "2" }
+            ]
+        })
 }
 
 
 async function updateGraph(){
-    let {nodeDataArray, linkDataArray} = await getMeshDataStreamInfo();
-    myDiagram.model.linkDataArray = []
-    myDiagram.model.nodeDataArray = []
-    myDiagram.model.nodeDataArray = nodeDataArray
-    myDiagram.model.linkDataArray = linkDataArray
+    isGraphReady = false;
+    await getMeshDataStreamInfo();
 }
 
 function setSelectedNodeMAC(macAddress){
     wasmTargetNode = macAddress.split(':').map(Number);
     console.log("MAC of current selected node: ");
     console.log(wasmTargetNode);
+}
+
+
+function updateIncremental(str) {
+    console.log(str);
+    let obj = JSON.parse(str);
+    let src = '';
+    let sink = '';
+    let bufferInit = new ArrayBuffer(13)
+    let byteArray = new Uint8Array(bufferInit)
+
+    if(meshGraphCharacteristic == undefined){
+        console.log("No BLE device connected!")
+        return;
+    }
+    //TODO: Transmit from and to MAC address via BLE to update the real network links between MCUs
+    if(obj.modifiedLinkData != undefined){
+        sourceNode = obj.modifiedLinkData[0].from.split(':').map(Number);
+        sinkNode = obj.modifiedLinkData[0].to.split(':').map(Number);
+
+        console.log('modifiedLinkData: ' + obj.modifiedLinkData[0].from);
+        console.log('modifiedLinkData: ' + obj.modifiedLinkData[0].to);
+
+        byteArray[0] = 0x03;//TODO: Check MSG Code!
+        for(let i=0; i<6; i++){
+            byteArray[i+1] = sourceNode[i];
+        }
+
+        for(let j=0; j<6; j++){
+            byteArray[j+7] = sinkNode[j];
+        }
+
+        meshGraphCharacteristic.writeValue(byteArray)
+            .then(_=>{console.log("MSG transmitted: modify link")})
+            .catch(err => {
+                console.log(err)
+            });
+    }
+    else if(obj.removedLinkKeys!=undefined){
+        //Assume that only one link will be deleted at once
+        if(obj.removedLinkKeys[0] == selectedLink.key){
+            sourceNode = selectedLink.from.split(':').map(Number);
+            sinkNode = selectedLink.to.split(':').map(Number);
+            byteArray[0] = 0x04;//TODO: Check MSG Code!
+            for(let i=0; i<6; i++){
+                byteArray[i+1] = sourceNode[i];
+            }
+
+            for(let j=0; j<6; j++){
+                byteArray[j+7] = sinkNode[j];
+            }
+
+            meshGraphCharacteristic.writeValue(byteArray)
+                .then(_=>{console.log("MSG transmitted: remove link")})
+                .catch(err => {
+                    console.log(err)
+                });
+        }
+
+    }
+
 }
 
 
