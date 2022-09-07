@@ -227,10 +227,12 @@ async function getMeshDataStreamInfo(){
             console.log("data source:");
             console.log(dataSource);
             myDiagram.startTransaction("add node")
-            myDiagram.model.commit(m => {m.addNodeData({key:dataSource, isGroup:true, text:dataSource})},"add node")
+            myDiagram.model.commit(m => {m.addNodeData({key:dataSource, isGroup:true, text:dataSource, wasm: hasWasmModule})},"add node")
             myDiagram.commitTransaction("add node")
             if(hasWasmModule){
-                nodeDataArray.push({key:dataSource+"WASM", text:"Wasm"+i.toString(), group:dataSource})
+                myDiagram.startTransaction("add wasm comp")
+                myDiagram.model.commit(m => {m.addNodeData({key:dataSource+"WASM", text:"Wasm"+i.toString(), group:dataSource})},"add wasm comp")
+                myDiagram.commitTransaction("add wasm comp")
             }
 
             for(let j=0;j<numTarget;j++){
