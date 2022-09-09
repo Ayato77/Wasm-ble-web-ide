@@ -5,6 +5,14 @@ const CharacteristicUUID_Notification = '000000000-0000-0000-0000-000000000000';
 const CharacteristicUUID_ReadRead = 0xFF01;
 const CharacteristicUUID_Write = '00000000-0000-0000-0000-000000000000';
 
+//BLE MSG CODES
+const BLE_WASM_INIT = 0x01;
+const BLE_WASM_SEND = 0x02;
+const BLE_ADD_DATA_DEST = 0x03;
+const BLE_REMOVE_DATA_DEST = 0x04;
+const BLE_WASM_MOVING = 0x05;
+const BLE_WASM_OFF_MSG = 0x06;
+
 let keyDevice;
 let keyServer;
 let keyService;
@@ -95,20 +103,22 @@ function bleScan(){
  */
 function onUpload(wasmArray){
     console.log('onUpload')
+    let inputLength = Number(document.getElementById('inputLength').value)
     console.log(wasmArray.length)
     let numberOfPackets = Math.ceil(wasmArray.length/(mtu-3))
     //Assume that the max number of packets is 16^4
-    let bufferInit = new ArrayBuffer(9)//
+    let bufferInit = new ArrayBuffer(10)//
     let byteArray = new Uint8Array(bufferInit)
-    byteArray[0] = 0x01;
+    byteArray[0] = BLE_WASM_INIT;
     byteArray[1] = numberOfPackets>>8;
     byteArray[2] = numberOfPackets % 256;
-    byteArray[3] = wasmTargetNode[0];
-    byteArray[4] = wasmTargetNode[1];
-    byteArray[5] = wasmTargetNode[2];
-    byteArray[6] = wasmTargetNode[3];
-    byteArray[7] = wasmTargetNode[4];
-    byteArray[8] = wasmTargetNode[5];
+    byteArray[3] = inputLength;
+    byteArray[4] = wasmTargetNode[0];
+    byteArray[5] = wasmTargetNode[1];
+    byteArray[6] = wasmTargetNode[2];
+    byteArray[7] = wasmTargetNode[3];
+    byteArray[8] = wasmTargetNode[4];
+    byteArray[9] = wasmTargetNode[5];
 
     let bufferNext = new ArrayBuffer(mtu)
     let byteNextArray = new Uint8Array(bufferNext)
@@ -125,7 +135,7 @@ function onUpload(wasmArray){
                         let bufferLast = new ArrayBuffer((wasmArray.length % mtu) + 3)
                         byteNextArray = new Uint8Array(bufferLast)
                     }
-                    byteNextArray[0] = 0x02
+                    byteNextArray[0] = BLE_WASM_SEND
                     byteNextArray[1] = i >> 8
                     byteNextArray[2] = i % 256
 
@@ -198,7 +208,7 @@ async function getMeshDataStreamInfo(){
         let readTables = 0;
         let i=1;
         let numTarget = 0;
-        let hasWasmModule = 0;
+        let wasmStatus = 0; //0: no wasm executable on this node, 1: wasm on, 2: wasm off
         let nodeDataArray = []
         let linkDataArray = []
         let dataSource;
@@ -210,7 +220,7 @@ async function getMeshDataStreamInfo(){
 
         while(readTables<mtu1){
             dataSource = ""
-            hasWasmModule = value.getUint8(i);
+            wasmStatus = value.getUint8(i);
             i++;
             numTarget = value.getUint8(i)-1;
             i++;
@@ -227,9 +237,9 @@ async function getMeshDataStreamInfo(){
             console.log("data source:");
             console.log(dataSource);
             myDiagram.startTransaction("add node")
-            myDiagram.model.commit(m => {m.addNodeData({key:dataSource, isGroup:true, text:dataSource, wasm: hasWasmModule})},"add node")
+            myDiagram.model.commit(m => {m.addNodeData({key:dataSource, isGroup:true, text:dataSource, wasm: wasmStatus})},"add node")
             myDiagram.commitTransaction("add node")
-            if(hasWasmModule){
+            if(wasmStatus == 1){
                 myDiagram.startTransaction("add wasm comp")
                 myDiagram.model.commit(m => {m.addNodeData({key:dataSource+"WASM", text:"Wasm"+i.toString(), group:dataSource})},"add wasm comp")
                 myDiagram.commitTransaction("add wasm comp")

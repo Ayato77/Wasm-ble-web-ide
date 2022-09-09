@@ -1,6 +1,12 @@
 const portSize = new go.Size(8, 8);
 let selectedLink;
+let selectedWasm;
 let isGraphReady = true;
+
+let bufferWasmMovingInit = new ArrayBuffer(13);
+let byteWasmMovingArray = new Uint8Array(bufferWasmMovingInit);
+let wasmMovingFrom = [0,0,0,0,0,0]
+let wasmMovingTo = [0,0,0,0,0,0]
 
 function init() {
     const $ = go.GraphObject.make;
@@ -177,19 +183,72 @@ function init() {
                 selectedLink = myDiagram.model.findLinkDataForKey(part.data.key)
                 console.log(JSON.stringify(selectedLink))
             }
-
         });
+
+    myDiagram.addModelChangedListener(function (evt){
+        if (evt.isTransactionFinished){
+            var txn = evt.object;  // a Transaction
+        // iterate over all of the actual ChangedEvents of the Transaction
+            txn.changes.each(function(e) {
+                if (e.change === go.ChangedEvent.Property) {
+                    if (e.modelChange === "nodeGroupKey") {
+                        console.log(evt.propertyName + " changed group key: " +
+                            e.object + " from: " + e.oldValue + " to: " + e.newValue);
+
+                        if(meshGraphCharacteristic == undefined){
+                            console.log("No BLE device connected!")
+                            //TODO: call undo
+                            return;
+                        }
+
+                        if(e.oldValue !== undefined && e.newValue !== undefined){
+                            if(!myDiagram.model.findNodeDataForKey(e.newValue).wasm){
+                                alert("This node has no wasm environment!!");
+                                //TODO: call undo
+                                return;
+                            }
+                            byteWasmMovingArray[0] = BLE_WASM_MOVING;
+                            wasmMovingFrom = e.oldValue.split(':').map(Number);
+                            wasmMovingTo = e.newValue.split(':').map(Number);
+                            for(let i=0; i<6; i++){
+                                byteWasmMovingArray[i+1] = wasmMovingFrom[i];
+                            }
+
+                            for(let j=0; j<6; j++){
+                                byteWasmMovingArray[j+7] = wasmMovingTo[j];
+                            }
+
+                            meshGraphCharacteristic.writeValue(byteWasmMovingArray)
+                                .then(_=>{console.log("MSG transmitted: wasm moving")})
+                                .catch(err => {
+                                    console.log(err)
+                                });
+                        }
+                        else if(e.oldValue !== undefined && e.newValue === undefined){
+                            byteWasmMovingArray[0] = BLE_WASM_OFF_MSG
+                            meshGraphCharacteristic.writeValue(byteWasmMovingArray)
+                                .then(_=>{console.log("MSG transmitted: wasm moving")})
+                                .catch(err => {
+                                    console.log(err)
+                                });
+                        }
+                    }
+                }
+            });
+        }
+    });
 
     myDiagram.model = $(go.GraphLinksModel,
         {
             nodeKeyProperty: 'key',
             linkKeyProperty: 'key',
+            nodeGroupKeyProperty: 'group',
             nodeDataArray: [
-                {key:"1", isGroup:true, text:"Root"},
-                {key:"2", isGroup:true, text:"Processor"},
-                {key:"3", isGroup:true, text:"Reader"},
-                {text:"wasm A", group:2, key:-1},
-                {text:"wasm B", group:3, key:-2}
+                {key:"1", isGroup:true, text:"Root", wasm: 0},
+                {key:"2", isGroup:true, text:"Processor", wasm: 1},
+                {key:"3", isGroup:true, text:"Reader", wasm: 0},
+                {text:"wasm A", group:"2", key:"-1"},
+                {text:"wasm B", group:"3", key:"-2"}
             ],
             linkDataArray: [
                 { key:"1", from: "1", to: "2" , color: 'red'},
@@ -232,7 +291,7 @@ function updateIncremental(str) {
         console.log('modifiedLinkData: ' + obj.modifiedLinkData[0].from);
         console.log('modifiedLinkData: ' + obj.modifiedLinkData[0].to);
 
-        byteArray[0] = 0x03;//TODO: Check MSG Code!
+        byteArray[0] = BLE_ADD_DATA_DEST;
         for(let i=0; i<6; i++){
             byteArray[i+1] = sourceNode[i];
         }
@@ -252,7 +311,7 @@ function updateIncremental(str) {
         if(obj.removedLinkKeys[0] == selectedLink.key){
             sourceNode = selectedLink.from.split(':').map(Number);
             sinkNode = selectedLink.to.split(':').map(Number);
-            byteArray[0] = 0x04;//TODO: Check MSG Code!
+            byteArray[0] = BLE_REMOVE_DATA_DEST;
             for(let i=0; i<6; i++){
                 byteArray[i+1] = sourceNode[i];
             }
