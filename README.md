@@ -13,5 +13,5 @@ sequenceDiagram
     ESP32-->>ESP32: write into storage
     WebIDE->>ESP32: send last packets (write event)
     ESP32-->>ESP32: write into storage
-    ESP32-->>ESP32: restart
+    ESP32-->>ESP32: init Wasm module
 ```
