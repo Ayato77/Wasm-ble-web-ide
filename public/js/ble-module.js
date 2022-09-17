@@ -1,9 +1,7 @@
 const serviceGraphUUID = 0x00EE;
 const charGraphUUID_Req_Table = 0xEE01;
-//Characteristics
-const CharacteristicUUID_Notification = '000000000-0000-0000-0000-000000000000';
-const CharacteristicUUID_ReadRead = 0xFF01;
-const CharacteristicUUID_Write = '00000000-0000-0000-0000-000000000000';
+const serviceWasmUploadUUID = 0x00FF;
+const charWasmUpload = 0xFF01;
 
 //BLE MSG CODES
 const BLE_WASM_INIT = 0x01;
@@ -13,7 +11,7 @@ const BLE_REMOVE_DATA_DEST = 0x04;
 const BLE_WASM_MOVING = 0x05;
 const BLE_WASM_OFF_MSG = 0x06;
 
-let keyDevice;
+let bluetoothDevice;
 let keyServer;
 let keyService;
 let keyNotificationCharacteristic;
@@ -40,11 +38,11 @@ let sinkNode = [0,0,0,0,0,0]
  * scan ble peripheral devices
  */
 function bleScan(){
-    //TODO: get service_uuid and characteristic_uuid from html form
     //TODO: show a status message of connection with alert or something
-    //TODO: Store requested MTU size!!
-    let srvUUID = Number(document.getElementById('srvUUID').value)
-    let charUUID = Number(document.getElementById('charUUID').value)
+    //let srvUUID = Number(document.getElementById('srvUUID').value)
+    //let charUUID = Number(document.getElementById('charUUID').value)
+    let srvUUID = serviceWasmUploadUUID;
+    let charUUID = charWasmUpload;
     console.log(srvUUID)
     navigator.bluetooth.requestDevice({
         filters: [{
@@ -60,8 +58,8 @@ function bleScan(){
             console.log("device.id    : " + device.id);
             console.log("device.name  : " + device.name);
             console.log("device.uuids : " + device.uuids);
-            keyDevice = device;
-            keyDevice.addEventListener('gattserverdisconnected', onDisconnected);
+            bluetoothDevice = device;
+            bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
             return device.gatt.connect();
         })
         //get service
@@ -123,7 +121,10 @@ function onUpload(wasmArray){
     let bufferNext = new ArrayBuffer(mtu)
     let byteNextArray = new Uint8Array(bufferNext)
 
-
+    if(!esp32Characteristic){
+        alert("Scan first the monitor node and get bluetooth service!");
+        return;
+    }
     esp32Characteristic.writeValue(byteArray)
         .then(_ => {
                 console.log('numberOfPackets')
@@ -153,6 +154,7 @@ function onUpload(wasmArray){
         })
         .catch(error => {
             console.log(error);
+            alert("upload WASM faild: "+ error);
     })
 }
 
@@ -264,10 +266,36 @@ async function getMeshDataStreamInfo(){
         console.log('End reading tables');
     } catch(error) {
         console.log('Update mesh graph failed. ' + error);
+        alert('Update mesh graph failed. ' + error);
         return;
     }
 }
 
+function onDisconnectButtonClick() {
+    if (!bluetoothDevice) {
+        console.log('> No bluetooth Device is connected (mesh graph service)');
+    }
+    else{
+        if (bluetoothDevice.gatt.connected) {
+            console.log('Disconnecting from Bluetooth Device...');
+            bluetoothDevice.gatt.disconnect();
+        } else {
+            console.log('> Bluetooth Device is already disconnected (wasm upload service)');
+        }
+    }
+    if(!meshMonitorDevice){
+        console.log('> No bluetooth Device is connected (mesh graph service)');
+    }
+    else{
+        if (meshMonitorDevice.gatt.connected) {
+            console.log('Disconnecting from Bluetooth Device...');
+            meshMonitorDevice.gatt.disconnect();
+        }
+        else {
+            console.log('> Bluetooth Device is already disconnected (mesh graph service)');
+        }
+    }
+}
 
 function onDisconnected(){
     console.log('> Bluetooth Device disconnected')

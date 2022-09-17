@@ -244,16 +244,16 @@ function init() {
             linkKeyProperty: 'key',
             nodeGroupKeyProperty: 'group',
             nodeDataArray: [
-                {key:"1", isGroup:true, text:"Root", wasm: 0},
-                {key:"2", isGroup:true, text:"Processor", wasm: 1},
+                {key:"1", isGroup:true, text:"Please scan graph service (bluetooth) and get current data stream network", wasm: 0},
+                /*{key:"2", isGroup:true, text:"Processor", wasm: 1},
                 {key:"3", isGroup:true, text:"Reader", wasm: 0},
                 {text:"wasm A", group:"2", key:"-1"},
-                {text:"wasm B", group:"3", key:"-2"}
+                {text:"wasm B", group:"3", key:"-2"}*/
             ],
             linkDataArray: [
-                { key:"1", from: "1", to: "2" , color: 'red'},
+                /*{ key:"1", from: "1", to: "2" , color: 'red'},
                 { key:"2", from: "1", to: "3" , color: 'red'},
-                { key:"3", from: "3", to: "2" }
+                { key:"3", from: "3", to: "2" }*/
             ]
         })
 }

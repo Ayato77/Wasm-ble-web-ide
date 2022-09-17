@@ -102,9 +102,17 @@
 </head>
 <body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
-<h1>Web IDE for the AS program of the edge device</h1>
-<h2>Please scan BLE-peripheral devices before uploading Wasm</h2>
+<h1>Web Monitor for ESPs mesh network</h1>
+<div id="diagramDiv"
+     style="width:80%; height:500px; background-color: #DAE4E4;">
+</div>
 <div>
+    <button onclick="connectMeshMonitorNode()">Get mesh graph service</button>
+    <button onclick="updateGraph()">Update mesh network graph</button>
+    <button onclick="onDisconnectButtonClick()">Disconnect BLE Device</button>
+</div>
+<h2>Please scan a BLE device (monitor node) before uploading Wasm</h2>
+<!--<div>
     Service UUID
     <input id="srvUUID" type="text" value="0x00FF">
 
@@ -112,23 +120,10 @@
 <div>
     Characteristic UUID
     <input id="charUUID" type="text" value="0xFF01">
-</div>
+</div>-->
 <div>
-    <button onclick="bleScan()">Scan BLE-peripheral devices</button>
-</div>
-<div id="diagramDiv"
-     style="width:80%; height:500px; background-color: #DAE4E4;">
-</div>
-<div>
-    <button onclick="connectMeshMonitorNode()">Connect to a monitor node</button>
-    <button onclick="updateGraph()">Update mesh network graph</button>
-</div>
-<div>
-    <button onclick="addNode()">Add Node</button>
-</div>
-<div id="diagramEventMsg">selected node id will be shown here</div>
-<div id="notificationMsg">
-    Notification active??
+    <button onclick="bleScan()">Get WASM upload service</button>
+    <button onclick="onDisconnectButtonClick()">Disconnect BLE Device</button>
 </div>
 <h2>You can code here (AssemblyScript)</h2>
 <div class="codeArea">
@@ -180,19 +175,6 @@
     export declare function setConfJson(ptr: usize, len: usize): void;
   </textarea>
 </div>-->
-<textarea id="mySavedModel" style="width:100%;height:300px; display:none;">{ "class": "go.GraphLinksModel",
-  "nodeDataArray": [
-{"key":1, "isGroup":true, "text":"Root"},
-{"key":2, "isGroup":true, "text":"Processor"},
-{"key":3, "isGroup":true, "text":"Reader"},
-{"text":"wasm A", "group":2, "key":-1},
-{"text":"wasm B", "group":3, "key":-2}
- ],
-  "linkDataArray": [
-    { "from": 1, "to": 2 },
-    { "from": 1, "to": 3 }
-    ]}
-  </textarea>
 <script src="js/mesh-diagram.js"></script>
 </body>
 </html>
