@@ -101,7 +101,8 @@ function bleScan(){
  */
 function onUpload(wasmArray){
     console.log('onUpload')
-    let inputLength = Number(document.getElementById('inputLength').value)
+    let inputLength = document.getElementById('code').value.match(/\((.+)\)/)[1].split(',').length
+    console.log("input length: " + inputLength.toString())
     console.log(wasmArray.length)
     let numberOfPackets = Math.ceil(wasmArray.length/(mtu-3))
     //Assume that the max number of packets is 16^4

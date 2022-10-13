@@ -129,14 +129,10 @@
 <div class="codeArea">
     <!-- <input type="file"> -->
     <textarea id="code">
-      export function calcWasm(x: u8, y:u8): u8 {
-        return x+y
-      }
+        export function calcWasm(x: u8): u8 {
+            return x+1
+        }
     </textarea>
-</div>
-<div>
-    Input length of function parameter (bytes)
-    <input id="inputLength" type="text" value="0">
 </div>
 <div>
     <input type="button" value="compile and load" onclick="compileAS()">
