@@ -6,6 +6,8 @@ An experimental Web UI for monitoring ESP-WIFI-MESH data stream network with Web
   - moving WASM module
   - delete WASM module
 
+You can test it on [Render](https://wasm-ide-for-esp32.onrender.com/ide.html)
+
 ## Instruction
 Due to the implementation, there are two GATT services for uploading WASM and graph functions. Therefore, each service should be scanned and connected separately.
 
