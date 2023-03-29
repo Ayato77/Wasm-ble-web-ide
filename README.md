@@ -1,5 +1,5 @@
 # Web UI for monitoring ESPs Mesh network and update WASM
-An experimental Web UI for monitoring ESP-WIFI-MESH data stream network with WebAssembly (WASM). This UI communicates an ESP MCU via BLE provides the following functionarities:
+An experimental Web UI for monitoring ESP-WIFI-MESH data stream network with WebAssembly (WASM). This UI communicates an ESP MCU via BLE and provides the following functionarities:
 - AssemblyScript IDE, compiling and uploading WASM
 - Datastream modification based on the graph
   - data stream (add/remove links)
